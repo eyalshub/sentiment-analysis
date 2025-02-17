@@ -32,9 +32,7 @@ emotion_columns = combined_df.columns[9:]
 combined_df['created_utc'] = pd.to_datetime(combined_df['created_utc'], unit='s', errors='coerce')
 combined_df.to_csv('data/full_dataset/goemotions_combined.csv', index=False)
 
-"""בניית מילון רגשות
 
-"""
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from collections import defaultdict
@@ -242,14 +240,12 @@ print("Processing completed.")
 
 import json
 
-# הנתיב לקובץ
+
 file_path = 'emotion_word_metrics.json'
 
-# קריאת הקובץ
 with open(file_path, 'r') as f:
     emotion_metrics = json.load(f)
 
-# הצגת נתונים
 for emotion, metrics in emotion_metrics.items():
     print(f"Emotion: {emotion}")
     print(f"  TF-IDF Words: {', '.join(metrics['tfidf_words'])}")
@@ -372,14 +368,7 @@ results = load_results_from_file('emotion_word_metrics.json')
 
 plot_all_data_visualizations(results, top_n=10)
 
-"""הפרדה בין סטוסטים עם רגשות נטרילים לכלו בלי
 
-neutral_df – דאטה-פריים שמכיל את כל השורות שבהן הערך בעמודת "neutral" הוא 1 (כלומר, רגשות נייטרליים).
-whitout_neutral_df – דאטה-פריים שמכיל את כל השורות שבהן הערך בעמודת "neutral" הוא 0 (כלומר, לא רגשות נייטרליים).
-common_ids – יוצרת סט שמכיל את ה-ID's המשותפים בין שני הדאטה-פריימים — אלו שמופיעים גם בneutral_df וגם בwhitout_neutral_df.
-neutral_with_common_ids – כל השורות בneutral_df עם ה-ID's המשותפים.
-whitout_neutral_with_common_ids – כל השורות בwhitout_neutral_df עם ה-ID's המשותפים.
-"""
 
 neutral_df  = combined_df[combined_df['neutral'] == 1]
 whitout_neutral_df  = combined_df[combined_df['neutral'] == 0]
@@ -396,27 +385,22 @@ import numpy as np
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-# פונקציה לעיבוד טקסט - נוריד מילים מיותרות (stopwords)
+
 def preprocess_text(text, stop_words):
-    text = re.sub(r'\W+', ' ', text)  # הסרת תווים לא רצויים
-    words = text.lower().split()     # הפיכת הטקסט לאותיות קטנות וחלוקה למילים
-    words = [word for word in words if word not in stop_words]  # הסרת stopwords
+    text = re.sub(r'\W+', ' ', text) 
+    words = text.lower().split()   
+    words = [word for word in words if word not in stop_words]  
     return words
 
-# טוענים את רשימת ה-stopwords
-stop_words = list(stopwords.words('english'))  # המרה לרשימה
+stop_words = list(stopwords.words('english'))  
 
-# פונקציה לביצוע חישוב עבור רגש יחיד
 def compute_metrics_for_emotion(emotion, df, text_column, top_n_words=20):
-    # סינון הדאטה רק עבור הרגש הספציפי
     emotion_df = df[df[emotion] == 1][text_column]
 
-    # בדיקה אם יש נתונים לרגש
     if emotion_df.empty:
         print(f"No data for emotion: {emotion}")
         return {emotion: {'tfidf_words': [], 'common_words': [], 'log_tf': {}}}
 
-    # עיבוד טקסטים
     processed_texts = emotion_df.apply(lambda x: preprocess_text(x, stop_words)).tolist()
     processed_texts = [' '.join(text) for text in processed_texts if text]  # ביטול טקסטים ריקים
 
@@ -424,10 +408,8 @@ def compute_metrics_for_emotion(emotion, df, text_column, top_n_words=20):
         print(f"No valid texts for emotion: {emotion}")
         return {emotion: {'tfidf_words': [], 'common_words': [], 'log_tf': {}}}
 
-    # חישוב TF-IDF
     tfidf_vectorizer = TfidfVectorizer(stop_words=stop_words, max_features=top_n_words)
 
-    # בדיקה אם יש טקסטים לאחר הסינון
     if len(processed_texts) == 0:
         print(f"Skipping TF-IDF computation for {emotion} due to no valid processed text.")
         return {emotion: {'tfidf_words': [], 'common_words': [], 'log_tf': {}}}
@@ -435,14 +417,11 @@ def compute_metrics_for_emotion(emotion, df, text_column, top_n_words=20):
     tfidf_matrix = tfidf_vectorizer.fit_transform(processed_texts)
     top_tfidf_words = tfidf_vectorizer.get_feature_names_out()
 
-    # חישוב המילים הנפוצות
     common_words = get_most_common_words(processed_texts, top_n=top_n_words)
 
-    # חישוב LogTF
     word_indices = {word: idx for idx, word in enumerate(top_tfidf_words)}
     log_tf = {word: np.log1p(tfidf_matrix[:, word_indices[word]].sum()) for word in top_tfidf_words}
 
-    # החזרת תוצאות
     return {
         emotion: {
             'tfidf_words': list(top_tfidf_words),
@@ -451,7 +430,6 @@ def compute_metrics_for_emotion(emotion, df, text_column, top_n_words=20):
         }
     }
 
-# שמירה וטעינה של תוצאות
 def save_results_to_file(results, file_path):
     with open(file_path, 'w') as f:
         json.dump(results, f)
@@ -462,7 +440,6 @@ def load_results_from_file(file_path):
             return json.load(f)
     return {}
 
-# עיבוד על כל הרגשות
 results = load_results_from_file('whitout_neutral_emotion_word_metrics.json')
 for emotion in emotion_columns:
     if emotion in results:
@@ -489,38 +466,30 @@ import numpy as np
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-# פונקציה לעיבוד טקסט - נוריד מילים מיותרות (stopwords)
 def preprocess_text(text, stop_words):
-    text = re.sub(r'\W+', ' ', text)  # הסרת תווים לא רצויים
-    words = text.lower().split()     # הפיכת הטקסט לאותיות קטנות וחלוקה למילים
-    words = [word for word in words if word not in stop_words]  # הסרת stopwords
+    text = re.sub(r'\W+', ' ', text) 
+    words = text.lower().split()    
+    words = [word for word in words if word not in stop_words]  
     return words
 
-# טוענים את רשימת ה-stopwords
-stop_words = list(stopwords.words('english'))  # המרה לרשימה
+stop_words = list(stopwords.words('english'))  
 
-# פונקציה לביצוע חישוב עבור רגש יחיד
 def compute_metrics_for_emotion(emotion, df, text_column, top_n_words=20):
-    # סינון הדאטה רק עבור הרגש הספציפי
     emotion_df = df[df[emotion] == 1][text_column]
 
-    # בדיקה אם יש נתונים לרגש
     if emotion_df.empty:
         print(f"No data for emotion: {emotion}")
         return {emotion: {'tfidf_words': [], 'common_words': [], 'log_tf': {}}}
 
-    # עיבוד טקסטים
     processed_texts = emotion_df.apply(lambda x: preprocess_text(x, stop_words)).tolist()
-    processed_texts = [' '.join(text) for text in processed_texts if text]  # ביטול טקסטים ריקים
+    processed_texts = [' '.join(text) for text in processed_texts if text] 
 
     if len(processed_texts) == 0:
         print(f"No valid texts for emotion: {emotion}")
         return {emotion: {'tfidf_words': [], 'common_words': [], 'log_tf': {}}}
 
-    # חישוב TF-IDF
     tfidf_vectorizer = TfidfVectorizer(stop_words=stop_words, max_features=top_n_words)
 
-    # בדיקה אם יש טקסטים לאחר הסינון
     if len(processed_texts) == 0:
         print(f"Skipping TF-IDF computation for {emotion} due to no valid processed text.")
         return {emotion: {'tfidf_words': [], 'common_words': [], 'log_tf': {}}}
@@ -528,14 +497,11 @@ def compute_metrics_for_emotion(emotion, df, text_column, top_n_words=20):
     tfidf_matrix = tfidf_vectorizer.fit_transform(processed_texts)
     top_tfidf_words = tfidf_vectorizer.get_feature_names_out()
 
-    # חישוב המילים הנפוצות
     common_words = get_most_common_words(processed_texts, top_n=top_n_words)
 
-    # חישוב LogTF
     word_indices = {word: idx for idx, word in enumerate(top_tfidf_words)}
     log_tf = {word: np.log1p(tfidf_matrix[:, word_indices[word]].sum()) for word in top_tfidf_words}
 
-    # החזרת תוצאות
     return {
         emotion: {
             'tfidf_words': list(top_tfidf_words),
@@ -544,7 +510,6 @@ def compute_metrics_for_emotion(emotion, df, text_column, top_n_words=20):
         }
     }
 
-# שמירה וטעינה של תוצאות
 def save_results_to_file(results, file_path):
     with open(file_path, 'w') as f:
         json.dump(results, f)
@@ -555,7 +520,6 @@ def load_results_from_file(file_path):
             return json.load(f)
     return {}
 
-# עיבוד על כל הרגשות
 results = load_results_from_file('whit_neutral_emotion_word_metrics.json')
 for emotion in emotion_columns:
     if emotion in results:
@@ -737,9 +701,7 @@ emotion_words = get_unique_words_for_emotions(combined_df, emotion_columns)
 for emotion, words in emotion_words.items():
     print(f"Emotion: {emotion} -> Words: {words}")
 
-"""ניקוי טקסט באופן מלא
 
-"""
 
 import nltk
 from nltk.corpus import stopwords
@@ -886,30 +848,24 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Embedding, Dropout
 from sklearn.preprocessing import MultiLabelBinarizer
 
-# המרת הטקסט לטוקנים
-X = combined_df['text']  # הטקסט
-y = combined_df[emotion_columns]  # רגשות כטורגים בינאריים
 
-# המרת רגשות ל-MultiLabel Binarization
+X = combined_df['text'] 
+y = combined_df[emotion_columns] 
 mlb = MultiLabelBinarizer()
 y = mlb.fit_transform(y.values)
 
-# פיצול הנתונים
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Tokenization - המרת הטקסטים למספרים
 tokenizer = Tokenizer(num_words=5000, lower=True)
 tokenizer.fit_on_texts(X_train)
 
 X_train_seq = tokenizer.texts_to_sequences(X_train)
 X_test_seq = tokenizer.texts_to_sequences(X_test)
 
-# Padding - יצירת אורך אחיד לכל הטקסטים
-max_sequence_length = 100  # גודל המקסימום של רצפים
+max_sequence_length = 100 
 X_train_pad = pad_sequences(X_train_seq, maxlen=max_sequence_length)
 X_test_pad = pad_sequences(X_test_seq, maxlen=max_sequence_length)
 
-# בניית המודל LSTM
 model = Sequential()
 model.add(Embedding(input_dim=5000, output_dim=100, input_length=max_sequence_length))
 model.add(LSTM(units=64, return_sequences=False))
@@ -917,46 +873,34 @@ model.add(Dropout(0.5))
 model.add(Dense(units=y.shape[1], activation='sigmoid'))  # Sigmoid ליצירת פלט של multi-label
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-# סיכום המודל
 model.summary()
 
-# אימון המודל
 history = model.fit(X_train_pad, y_train, epochs=5, batch_size=64, validation_data=(X_test_pad, y_test))
 
-# הערכת המודל על סט הנתונים
 score, accuracy = model.evaluate(X_test_pad, y_test)
 print(f"Test accuracy: {accuracy * 100:.2f}%")
 
-# חיזוי רגשות על טקסטים חדשים
 def predict_emotion_lstm(text):
-    # המרת הטקסט לאינדקסים ואז לארך אחיד
     text_seq = tokenizer.texts_to_sequences([text])
     text_pad = pad_sequences(text_seq, maxlen=max_sequence_length)
     prediction = model.predict(text_pad)
-    # בחירת רגשות עם ערכים גבוהים
     predicted_emotions = [emotion_columns[i] for i in range(len(prediction[0])) if prediction[0][i] >= 0.5]
     return predicted_emotions
 
-# דוגמה לחיזוי רגשות
 new_text = "I feel really happy today!"
 print(f"The predicted emotions for the text are: {predict_emotion_lstm(new_text)}")
 
-# הערכת המודל על סט הבדיקה
 score, accuracy = model.evaluate(X_test_pad, y_test)
 print(f"Test accuracy: {accuracy * 100:.2f}%")
 
 from sklearn.metrics import classification_report
 
-# חיזוי על כל הדגימות בסט הבדיקה
 y_pred = model.predict(X_test_pad)
 
-# חישוב מדדים כמו precision, recall ו-F1-score
-# כי מדובר בבעיה multi-label, נשתמש ב- classification_report כדי לראות את התוצאות לכל רגשות
 
-# המרת החיזויים והערכים האמיתיים בצורה בינארית (אם הערך מעל 0.5, נסמן כ-1, אחרת כ-0)
+
 y_pred_bin = (y_pred >= 0.5).astype(int)
 
-# הצגת דיווח על הביצועים
 print(classification_report(y_test, y_pred_bin, target_names=emotion_columns))
 
 classification_report(y_test , y_pred_bin)
@@ -967,7 +911,6 @@ classification_report(y_test , y_pred_bin)
 
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
 
-# טוענים את ה-tokenizer והמודל של DistilBERT
 tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
 model = DistilBertForSequenceClassification.from_pretrained("distilbert-base-uncased", num_labels=len(emotion_columns))
 
@@ -1009,16 +952,13 @@ test_dataloader
 from torch.optim import AdamW
 from torch.cuda.amp import autocast, GradScaler
 
-# הגדרת האופטימייזר
 optimizer = AdamW(model.parameters(), lr=2e-5)
 
-# אם יש לך GPU, העבר את המודל אליו
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = model.to(device)
 
 scaler = GradScaler()
 
-# פונקציה לאימון המודל
 def train(model, dataloader, optimizer, epochs=3):
     model.train()
     for epoch in range(epochs):
@@ -1029,26 +969,22 @@ def train(model, dataloader, optimizer, epochs=3):
 
             optimizer.zero_grad()
 
-            # משתמש ב-AMP (16 ביטים) כדי להאיץ את האימון
-            with autocast():  # הפעלת AMP בלי device_type
+            with autocast(): 
                 outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
                 loss = outputs.loss
 
-            # מבצע Scaling על הגרדיאנט לפני עדכון המשקלים
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
 
             print(f'Epoch {epoch+1}, Loss: {loss.item()}')
 
-# התחלת האימון
 train(model, train_dataloader, optimizer)
 
 from sklearn.metrics import classification_report
 
-# פונקציה להערכת המודל
 def evaluate_multilabel(model, dataloader, threshold=0.5):
-    model.eval()  # מצב הערכה
+    model.eval()  
     all_preds = []
     all_labels = []
 
@@ -1059,27 +995,24 @@ def evaluate_multilabel(model, dataloader, threshold=0.5):
             labels = batch[2].to(device)
 
             outputs = model(input_ids=input_ids, attention_mask=attention_mask)
-            probs = torch.sigmoid(outputs.logits)  # שימוש ב-sigmoid עבור רב-תוויות
-            preds = (probs > threshold).int()  # קביעת חיזויים לפי סף
+            probs = torch.sigmoid(outputs.logits) 
+            preds = (probs > threshold).int()  
 
             all_preds.append(preds.cpu().numpy())
             all_labels.append(labels.cpu().numpy())
 
-    # ממירים את הרשימות למערכים
     all_preds = np.vstack(all_preds)
     all_labels = np.vstack(all_labels)
 
-    # יצירת דוח הערכה
     report = classification_report(all_labels, all_preds, target_names=emotion_columns, zero_division=0)
     return report
 
 
-# הערכת המודל לאחר האימון
 print(evaluate_multilabel(model, test_dataloader))
 
 def predict_emotion(text):
-    model.eval()  # מצב הערכה
-    encoded_input = tokenizer([text], padding=True, truncation=True, max_length=512, return_tensors='pt')  # אין צורך ב-tolist
+    model.eval() 
+    encoded_input = tokenizer([text], padding=True, truncation=True, max_length=512, return_tensors='pt')  
     with torch.no_grad():
         outputs = model(input_ids=encoded_input['input_ids'].to(device),
                         attention_mask=encoded_input['attention_mask'].to(device))
@@ -1087,62 +1020,50 @@ def predict_emotion(text):
         predicted_emotions = [emotion_columns[i] for i in preds.cpu().numpy()]
     return predicted_emotions
 
-# דוגמת חיזוי
 new_text = "i woke up very tired today. i didn't do much but i think tomorrow might be better"
 print(f"The predicted emotions for the text are: {predict_emotion(new_text)}")
 
 import torch.nn.functional as F
 
 def predict_emotion_with_probabilities(text):
-    model.eval()  # מצב הערכה
-    # קידוד הטקסט
+    model.eval()  
     encoded_input = tokenizer([text], padding=True, truncation=True, max_length=512, return_tensors='pt')
     with torch.no_grad():
-        # חיזוי
         outputs = model(input_ids=encoded_input['input_ids'].to(device),
                         attention_mask=encoded_input['attention_mask'].to(device))
         probabilities = F.softmax(outputs.logits, dim=1)  # חישוב הסתברויות עם softmax
 
-        # ממירים את ההסתברויות למילון עם שמות הרגשות
         emotion_probs = {emotion_columns[i]: prob for i, prob in enumerate(probabilities[0].cpu().numpy())}
 
     return emotion_probs
 
-# דוגמת חיזוי
 # new_text = "i woke up very tired today. i didn't do much but i think tomorrow might be better"
 new_text = "i am black"
 
 emotion_probabilities = predict_emotion_with_probabilities(new_text)
 
-# הצגת התוצאות
 print("Emotion probabilities:")
 for emotion, prob in emotion_probabilities.items():
     print(f"{emotion}: {prob:.2%}")
 
 import pickle
 
-# נתיב שמירה
 save_path = "emotion_distilbert_model1.pkl"
 
-# שמירת המודל כקובץ pkl
 with open(save_path, "wb") as f:
     pickle.dump(model.state_dict(), f)
 
 print(f"Model saved as {save_path}")
 
-# טעינת המודל מקובץ pkl
 with open(save_path, "rb") as f:
     loaded_state_dict = pickle.load(f)
 
-# טוענים את המשקלים לתוך המודל
 model.load_state_dict(loaded_state_dict)
 
 print("Model loaded successfully from pkl file!")
 
-# נתיב שמירה
 save_path = "emotion_distilbert_model_and_tokenizer1.pkl"
 
-# שמירת המודל וה-tokenizer
 with open(save_path, "wb") as f:
     pickle.dump({
         "model_state_dict": model.state_dict(),
@@ -1151,14 +1072,11 @@ with open(save_path, "wb") as f:
 
 print(f"Model and tokenizer saved as {save_path}")
 
-# טעינת המודל וה-tokenizer מקובץ pkl
 with open(save_path, "rb") as f:
     saved_data = pickle.load(f)
 
-# טוענים את המשקלים לתוך המודל
 model.load_state_dict(saved_data["model_state_dict"])
 
-# טוענים את ה-tokenizer
 tokenizer = saved_data["tokenizer"]
 
 print("Model and tokenizer loaded successfully from pkl file!")
@@ -1174,7 +1092,6 @@ files.download('emotion_distilbert_model1.pkl')
 from google.colab import drive
 drive.mount('/content/drive')
 
-# העברת הקובץ ל-Google Drive
 !cp emotion_distilbert_model1.pkl /content/drive/MyDrive/
 
 !cp emotion_distilbert_model_and_tokenizer1.pkl /content/drive/MyDrive/
@@ -1199,10 +1116,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from torch.optim import AdamW
 from torch.cuda.amp import autocast, GradScaler
 
-# טוקניזר של Roberta
 tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
 
-# פונקציות עיבוד
 def encode_text(texts):
     return tokenizer(texts.tolist(), padding=True, truncation=True, max_length=512, return_tensors='pt')
 
@@ -1215,10 +1130,8 @@ def create_data_loader(texts, labels, batch_size=16):
     dataset = TensorDataset(input_ids, attention_mask, labels)
     return DataLoader(dataset, batch_size=batch_size)
 
-# חילוק הנתונים
 X_train, X_test, y_train, y_test = train_test_split(combined_df['text'], combined_df[emotion_columns], test_size=0.2, random_state=42)
 
-# יצירת DataLoader עבור האימון והבדיקה
 train_dataloader = create_data_loader(X_train, y_train, batch_size=4)
 test_dataloader = create_data_loader(X_test, y_test, batch_size=4)
 
@@ -1233,48 +1146,38 @@ from torch.cuda.amp import autocast, GradScaler
 
 model = RobertaForSequenceClassification.from_pretrained("roberta-base", num_labels=len(emotion_columns))
 
-# אם יש לך GPU, העבר את המודל אליו
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-# הגדרת האופטימיזר
 optimizer = AdamW(model.parameters(), lr=2e-5)
 
-# אופטימיזר ודחיית גרדיאנט
 scaler = GradScaler()
 
-# הגדרת מספר הצעדים להצטברות גרדיאנט
-accumulation_steps = 4  # לצבור 4 בatches לפני עדכון המשקלים
+accumulation_steps = 4  
 
-# פונקציה לאימון המודל
 def train(model, dataloader, optimizer, epochs=3):
     model.train()
     for epoch in range(epochs):
-        optimizer.zero_grad()  # אתחול של הגרדיאנט לפני תחילת האימון
+        optimizer.zero_grad() 
         for i, batch in enumerate(dataloader):
-            input_ids = batch[0].to(device)  # העברת הנתונים ל-GPU
-            attention_mask = batch[1].to(device)  # העברת הנתונים ל-GPU
-            labels = batch[2].to(device)  # העברת הנתונים ל-GPU
+            input_ids = batch[0].to(device)  
+            attention_mask = batch[1].to(device)  
+            labels = batch[2].to(device)  
 
-            # משתמש ב-AMP (16 ביטים) כדי להאיץ את האימון
             with autocast():
                 outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=labels)
                 loss = outputs.loss
 
-            # מחשבים את הגרדיאנטים ומצברים אותם
             scaler.scale(loss).backward()
 
-            # אם עברנו את מספר ה-batches שצברנו, מבצעים עדכון
             if (i + 1) % accumulation_steps == 0:
                 scaler.step(optimizer)
                 scaler.update()
-                optimizer.zero_grad()  # אתחול מחדש של הגרדיאנט
+                optimizer.zero_grad() 
 
             print(f'Epoch {epoch+1}, Batch {i+1}, Loss: {loss.item()}')
 
-        torch.cuda.empty_cache()  # שחרור זיכרון לאחר כל epoch
-
-# התחלת האימון
+        torch.cuda.empty_cache()  
 train(model, train_dataloader, optimizer)
 
 """###ALBERT"""
