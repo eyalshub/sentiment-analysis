@@ -28,10 +28,8 @@ goemotions_1 = pd.read_csv('data/full_dataset/goemotions_1.csv')
 goemotions_2 = pd.read_csv('data/full_dataset/goemotions_2.csv')
 goemotions_3 = pd.read_csv('data/full_dataset/goemotions_3.csv')
 
-# איחוד הקבצים
 combined_df = pd.concat([goemotions_1, goemotions_2, goemotions_3], ignore_index=True)
 emotion_columns = combined_df.columns[9:]
-# שמירה לקובץ חדש
 combined_df['created_utc'] = pd.to_datetime(combined_df['created_utc'], unit='s', errors='coerce')
 combined_df.to_csv('data/full_dataset/goemotions_combined.csv', index=False)
 
